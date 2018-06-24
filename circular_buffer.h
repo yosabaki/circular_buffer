@@ -151,6 +151,7 @@ public:
 
     ~circular_buffer() noexcept {
         clear();
+        free(data);
     }
 
     T &operator[](const int &pos) {
@@ -227,7 +228,7 @@ public:
                 free(tmp);
                 throw;
             }
-            size_t tmpsize = _size + 1;
+            size_t tmpsize = _size;
             clear();
             free(data);
             _size = tmpsize;
@@ -257,7 +258,7 @@ public:
                 free(tmp);
                 throw;
             }
-            size_t tmpsize = _size + 1;
+            size_t tmpsize = _size;
             clear();
             free(data);
             _size = tmpsize;
@@ -276,12 +277,12 @@ public:
 
 
     iterator insert(const_iterator pos, T const &value) {
-        int sz = pos.pos-begin().pos;
+        int sz = pos.pos - begin().pos;
         push_back(value);
         for (iterator it = end() - 1; it > pos; it--) {
             std::swap(*it, *(it - 1));
         }
-        return buffer_iterator((begin()+sz).p, sz+beg, capacity, data);
+        return buffer_iterator((begin() + sz).p, sz + beg, capacity, data);
     }
 
     iterator erase(const_iterator pos) {
