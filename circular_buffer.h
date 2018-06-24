@@ -60,7 +60,7 @@ private:
         }
 
         buffer_iterator &operator+=(ptrdiff_t const &b) {
-            if (p < 0) {
+            if (b < 0) {
                 return *this -= (-b);
             }
             p += (b % cap);
@@ -72,7 +72,7 @@ private:
         }
 
         buffer_iterator &operator-=(ptrdiff_t const &b) {
-            if (p < 0) {
+            if (b < 0) {
                 return *this += (-b);
             }
             p -= (b % cap);
