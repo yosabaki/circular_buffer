@@ -7,6 +7,7 @@
 
 #include <iterator>
 #include <cassert>
+#include <cstring>
 
 template<typename T>
 class circular_buffer {
@@ -36,7 +37,7 @@ private:
         template<typename V>
         buffer_iterator(buffer_iterator<V> const &other, typename std::enable_if<
                 std::is_same<V const, U>::value && std::is_const<U>::value>::type * = nullptr) :
-                cap(other.cap), pos(other.pos), p(other.p), beg(other.beg) {}
+                pos(other.pos), cap(other.cap), p(other.p), beg(other.beg) {}
 
 
         buffer_iterator &operator++() {
@@ -144,7 +145,11 @@ public:
         data = static_cast<T *>(malloc(10 * sizeof(T)));
     }
 
-    circular_buffer(circular_buffer const &other) : circular_buffer() {
+    circular_buffer(size_t n) : _size(0), capacity(n), beg(0) {
+        data = static_cast<T *>(malloc(n * sizeof(T)));
+    }
+
+    circular_buffer(circular_buffer const &other) : circular_buffer(other.capacity) {
         try {
             for (const_iterator it = other.begin(); it != other.end(); it++) {
                 push_back(*it);
@@ -223,55 +228,33 @@ public:
     }
 
     void push_back(T const &value) {
-        if (_size + 1 < capacity) {
-            new(end().p) T(value);
-        } else {
-            T *tmp = static_cast<T *>(malloc(sizeof(T) * capacity * 2));
-            try {
-                std::copy(begin(), end(), tmp);
-                new(tmp + _size) T(value);
-            } catch (...) {
-                free(tmp);
-                throw;
+        if (_size + 1 >= capacity) {
+            circular_buffer tmp = circular_buffer(capacity * 2);
+            for (auto &el:*this) {
+                tmp.push_back(el);
             }
-            size_t tmpsize = _size;
-            clear();
-            free(data);
-            _size = tmpsize;
-            data = tmp;
-            capacity *= 2;
-            beg = 0;
+            swap(*this, tmp);
         }
+        new(end().p) T(value);
         _size++;
     }
 
     void pop_back() noexcept {
-        (end() - 1)->~T();
         _size--;
+        (end())->~T();
     }
 
 
     void push_front(T const &value) {
-        if (_size + 1 < capacity) {
-            new((begin() - 1).p) T(value);
-            beg = (capacity + beg - 1) % capacity;
-        } else {
-            T *tmp = static_cast<T *>(malloc(sizeof(T) * capacity * 2));
-            try {
-                std::copy(begin(), end(), tmp + 1);
-                new(tmp) T(value);
-            } catch (...) {
-                free(tmp);
-                throw;
+        if (_size + 1 >= capacity) {
+            circular_buffer tmp = circular_buffer(capacity * 2);
+            for (auto &el:*this) {
+                tmp.push_back(el);
             }
-            size_t tmpsize = _size;
-            clear();
-            free(data);
-            _size = tmpsize;
-            data = tmp;
-            capacity *= 2;
-            beg = 0;
+            swap(*this, tmp);
         }
+        new((begin() - 1).p) T(value);
+        beg = (capacity + beg - 1) % capacity;
         _size++;
     }
 
